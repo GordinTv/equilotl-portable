@@ -7,6 +7,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -167,6 +168,9 @@ func installLatestBuilds() (retErr error) {
 	Log.Debug("Downloading desktop.asar")
 
 	res, err := http.Get(downloadUrl)
+	if res != nil {
+		defer res.Body.Close()
+	}
 	if err == nil && res.StatusCode >= 300 {
 		err = errors.New(res.Status)
 	}
@@ -175,29 +179,94 @@ func installLatestBuilds() (retErr error) {
 		retErr = err
 		return
 	}
-	out, err := os.OpenFile(EquicordDirectory, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	out, err := os.CreateTemp(path.Dir(EquicordDirectory), ".equilotl-download-")
 	if err != nil {
 		Log.Error("Failed to create", EquicordDirectory+":", err)
 		retErr = err
 		return
 	}
+	defer os.Remove(out.Name())
+	defer out.Close()
 	read, err := io.Copy(out, res.Body)
 	if err != nil {
 		Log.Error("Failed to download to", EquicordDirectory+":", err)
 		retErr = err
 		return
 	}
-	contentLength := res.Header.Get("Content-Length")
-	expected := strconv.FormatInt(read, 10)
-	if expected != contentLength {
-		err = errors.New("Unexpected end of input. Content-Length was " + contentLength + ", but I only read " + expected)
+	if res.ContentLength >= 0 && read != res.ContentLength {
+		err = fmt.Errorf("Unexpected end of input: expected %d bytes, received %d", res.ContentLength, read)
 		Log.Error(err.Error())
 		retErr = err
 		return
+	}
+	if err = out.Sync(); err != nil {
+		return err
+	}
+	if err = out.Close(); err != nil {
+		return err
+	}
+	if err = validateEquicordDownload(out.Name()); err != nil {
+		return err
+	}
+	// Preserve the previous build before committing a fully verified download.
+	if previous, e := os.ReadFile(EquicordDirectory); e == nil {
+		if err = portableReplace(EquicordDirectory+".previous", previous, 0644); err != nil {
+			return err
+		}
+	} else if !errors.Is(e, os.ErrNotExist) {
+		return e
+	}
+	if err = portableAtomicReplace(out.Name(), EquicordDirectory); err != nil {
+		return err
 	}
 
 	_ = FixOwnership(EquicordDirectory)
 
 	InstalledHash = LatestHash
 	return
+}
+
+func validateEquicordDownload(p string) error {
+	f, err := os.Open(p)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	var header [16]byte
+	if _, err = io.ReadFull(f, header[:]); err != nil {
+		return err
+	}
+	size := binary.LittleEndian.Uint32(header[12:])
+	if binary.LittleEndian.Uint32(header[:]) != 4 || size == 0 || size > 32*1024*1024 {
+		return errors.New("invalid Equicord ASAR header")
+	}
+	b := make([]byte, size)
+	if _, err = io.ReadFull(f, b); err != nil {
+		return err
+	}
+	var index struct {
+		Files map[string]struct {
+			Size   int64
+			Offset string
+		}
+	}
+	if json.Unmarshal(b, &index) != nil {
+		return errors.New("invalid Equicord ASAR index")
+	}
+	info, err := f.Stat()
+	if err != nil {
+		return err
+	}
+	payload := int64(8) + int64(binary.LittleEndian.Uint32(header[4:]))
+	if payload < 16+int64(size) || payload > info.Size() {
+		return errors.New("invalid ASAR payload boundary")
+	}
+	for _, name := range []string{"package.json", "patcher.js", "preload.js", "renderer.js"} {
+		entry, ok := index.Files[name]
+		offset, e := strconv.ParseInt(entry.Offset, 10, 64)
+		if !ok || e != nil || offset < 0 || entry.Size <= 0 || offset > info.Size()-payload || entry.Size > info.Size()-payload-offset {
+			return fmt.Errorf("Equicord ASAR missing or truncated %s", name)
+		}
+	}
+	return nil
 }

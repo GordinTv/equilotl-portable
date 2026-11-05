@@ -34,6 +34,9 @@ func FindAsarFile(dir string) (*os.File, error) {
 }
 
 func (di *DiscordInstall) IsOpenAsar() (retBool bool) {
+	if di.portable {
+		return false
+	}
 	if di.isOpenAsar != nil {
 		return *di.isOpenAsar
 	}
@@ -64,6 +67,9 @@ func (di *DiscordInstall) IsOpenAsar() (retBool bool) {
 }
 
 func (di *DiscordInstall) InstallOpenAsar() error {
+	if di.portable {
+		return errors.New("OpenAsar is incompatible with unpacked portable installations")
+	}
 	PreparePatch(di)
 
 	if di.IsOpenAsar() {
@@ -121,6 +127,9 @@ func (di *DiscordInstall) InstallOpenAsar() error {
 }
 
 func (di *DiscordInstall) UninstallOpenAsar() error {
+	if di.portable {
+		return errors.New("OpenAsar is incompatible with unpacked portable installations")
+	}
 	PreparePatch(di)
 
 	dir := path.Join(di.appPath, "..")

@@ -184,7 +184,7 @@ func handleErr(di *DiscordInstall, err error, action string) {
 	if errors.Is(err, ErrAlreadyReported) {
 		return
 	}
-	if errors.Is(err, os.ErrPermission) {
+	if errors.Is(err, os.ErrPermission) && !di.portable {
 		switch runtime.GOOS {
 		case "windows":
 			err = errors.New("Permission denied. Make sure your Discord is fully closed (from the tray)!")
@@ -326,10 +326,14 @@ func RawInfoModal(id, title, description, extra string, isOpenAsar bool) g.Widge
 						g.Label(description),
 					),
 					&CondWidget{extra != "", func() g.Widget {
+						var details g.Widget = g.Label(extra).Wrapped(true)
+						if strings.Contains(extra, "PID:") || strings.Contains(extra, "exclusive executable access probe") {
+							details = g.Child().ID(id+"-process-details").Size(640, 260).Border(true).Layout(details)
+						}
 						return g.Column(
 							g.Dummy(0, 10),
 							g.Style().SetFontSize(20).To(
-								g.Label(extra).Wrapped(true),
+								details,
 							),
 						)
 					}, nil},
@@ -508,13 +512,11 @@ func renderInstaller() g.Widget {
 					text = "Discord"
 				}
 
-				if d.isPatched {
-					text += " (Equicord Installed)"
-				}
+				text = d.displayName()
 
 				return g.Row(
 					g.RadioButton(text, radioIdx == i).OnChange(makeRadioOnChange(i)),
-					g.Style().SetColor(g.StyleColorText, color.RGBA{0xff, 0xff, 0xff, 0x80}).To(g.Label(" "+d.path)),
+					g.Style().SetColor(g.StyleColorText, color.RGBA{0xff, 0xff, 0xff, 0x80}).To(g.Label(" "+d.location())),
 				)
 			}),
 			&CondWidget{showCustomLocation, func() g.Widget {
@@ -596,6 +598,18 @@ func renderInstaller() g.Widget {
 					To(
 						g.Button("Reinstall / Repair").
 							OnClick(func() {
+								choice := getChosenInstall()
+								if choice == nil {
+									return
+								}
+								if choice.portable {
+									release, err := choice.portablePreflight()
+									if err != nil {
+										handleErr(choice, err, "repair")
+										return
+									}
+									release()
+								}
 								if IsDevInstall {
 									handlePatch()
 								} else {
@@ -620,6 +634,7 @@ func renderInstaller() g.Widget {
 					),
 				g.Style().
 					SetColor(g.StyleColorButton, Ternary(isOpenAsar, DiscordRed, DiscordGreen)).
+					SetDisabled(currentDiscord != nil && currentDiscord.portable).
 					SetColor(g.StyleColorButtonHovered, Ternary(isOpenAsar, DiscordRedHovered, DiscordGreenHovered)).
 					SetStyle(g.StyleVarFrameRounding, 8, 8).
 					To(

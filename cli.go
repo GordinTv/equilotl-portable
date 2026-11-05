@@ -56,6 +56,8 @@ func main() {
 	flag.Bool("debug", false, "Enable debug info")
 
 	var helpFlag = flag.Bool("help", false, "View usage instructions")
+	var listFlag = flag.Bool("list", false, "List detected Discord installations, versions, paths and patch states")
+	var diagnoseFlag = flag.Bool("diagnose-processes", false, "Read-only portable process report; requires --location")
 	var versionFlag = flag.Bool("version", false, "View the program version")
 	var updateSelfFlag = flag.Bool("update-self", false, "Update me to the latest version")
 	var installFlag = flag.Bool("install", false, "Install Equicord")
@@ -66,6 +68,28 @@ func main() {
 	var locationFlag = flag.String("location", "", "The location of the Discord install to modify")
 	var branchFlag = flag.String("branch", "", "The branch of Discord to modify [auto|stable|ptb|canary]")
 	flag.Parse()
+	if *diagnoseFlag {
+		if *locationFlag == "" {
+			die("--diagnose-processes requires --location")
+		}
+		di := ParseDiscord(*locationFlag, "")
+		if di == nil || !di.portable {
+			die("Location is not a portable Discord installation")
+		}
+		report, err := portableProcessDiagnostic(di)
+		fmt.Println(report)
+		if err != nil {
+			exitFailure()
+		}
+		return
+	}
+	if *listFlag {
+		for _, d := range discords {
+			di := d.(*DiscordInstall)
+			fmt.Printf("%s - %s\n", di.displayName(), di.location())
+		}
+		return
+	}
 
 	if *helpFlag {
 		flag.Usage()
@@ -158,11 +182,20 @@ func main() {
 	} else if uninstall {
 		errSilent = PromptDiscord("unpatch", *locationFlag, *branchFlag).unpatch()
 	} else if update {
+		di := PromptDiscord("repair", *locationFlag, *branchFlag)
+		if di.portable {
+			release, e := di.portablePreflight()
+			if e != nil {
+				Log.Error(e)
+				exitFailure()
+			}
+			release()
+		}
 		Log.Info("Downloading latest Equicord files...")
-		err := installLatestBuilds()
+		err = installLatestBuilds()
 		Log.Info("Done!")
 		if err == nil {
-			errSilent = PromptDiscord("repair", *locationFlag, *branchFlag).patch()
+			errSilent = di.patch()
 		}
 	} else if installOpenAsar {
 		discord := PromptDiscord("patch", *locationFlag, *branchFlag)
@@ -185,6 +218,7 @@ func main() {
 		exitFailure()
 	}
 	if errSilent != nil {
+		Log.Error(errSilent)
 		exitFailure()
 	}
 
@@ -255,7 +289,7 @@ func PromptDiscord(action, dir, branch string) *DiscordInstall {
 	items := SliceMap(discords, func(d any) string {
 		install := d.(*DiscordInstall)
 		//goland:noinspection GoDeprecation
-		return fmt.Sprintf("%s - %s%s", strings.Title(install.branch), install.path, Ternary(install.isPatched, " [Equicord Installed]", ""))
+		return fmt.Sprintf("%s - %s", install.displayName(), install.location())
 	})
 	items = append(items, "Custom Location")
 

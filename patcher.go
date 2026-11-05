@@ -54,13 +54,17 @@ func init() {
 }
 
 type DiscordInstall struct {
-	path             string // the base path
-	branch           string // canary / stable / ...
-	appPath          string // List of app folder to patch
-	isPatched        bool
-	isFlatpak        bool
-	isSystemElectron bool // Needs special care https://aur.archlinux.org/packages/discord_arch_electron
-	isOpenAsar       *bool
+	portableProcessWarnings string
+	portableFault           func(string) error // nil in production; transaction fault injection in tests
+	portable                bool
+	version                 string
+	path                    string // the base path
+	branch                  string // canary / stable / ...
+	appPath                 string // List of app folder to patch
+	isPatched               bool
+	isFlatpak               bool
+	isSystemElectron        bool // Needs special care https://aur.archlinux.org/packages/discord_arch_electron
+	isOpenAsar              *bool
 }
 
 //region Patch
@@ -73,7 +77,8 @@ func patchAppAsar(dir string, isSystemElectron bool) (err error) {
 	defer func() {
 		if err != nil && len(renamesDone) > 0 {
 			Log.Error("Failed to patch. Undoing partial patch")
-			for _, rename := range renamesDone {
+			for i := len(renamesDone) - 1; i >= 0; i-- {
+				rename := renamesDone[i]
 				if innerErr := os.Rename(rename[1], rename[0]); innerErr != nil {
 					Log.Error("Failed to undo partial patch. This install is probably bricked.", innerErr)
 				} else {
@@ -111,12 +116,22 @@ func patchAppAsar(dir string, isSystemElectron bool) (err error) {
 
 func (di *DiscordInstall) patch() error {
 	Log.Info("Patching " + di.path + "...")
+	if di.portable {
+		release, err := di.portablePreflight()
+		if err != nil {
+			return err
+		}
+		release()
+	}
 	if LatestHash != InstalledHash {
 		if err := InstallLatestBuilds(); err != nil {
 			return ErrAlreadyReported
 		}
 	}
 
+	if di.portable {
+		return di.patchPortable()
+	}
 	PreparePatch(di)
 
 	if di.isPatched {
@@ -217,16 +232,41 @@ func cleanupDesyncedPatchedInstall(dir string, isSystemElectron bool) (bool, err
 		return false, nil
 	}
 
-	Log.Warn("Detected a patched install with a non-Equicord app.asar. Discord was likely updated while patched; removing stale _app.asar")
-
-	if err = os.Remove(_appAsar); err != nil {
-		return false, CheckIfErrIsCauseItsBusyRn(err)
+	Log.Warn("Detected a host update; preserving the stale original in a recovery archive")
+	archive, err := os.MkdirTemp(dir, ".equilotl-stale-")
+	if err != nil {
+		return false, err
+	}
+	backup := path.Join(archive, "_app.asar")
+	original, err := os.ReadFile(_appAsar)
+	if err != nil {
+		os.Remove(archive)
+		return false, err
+	}
+	if err = portableReplace(backup, original, 0644); err != nil {
+		return false, err
+	}
+	check, err := os.ReadFile(backup)
+	if err != nil {
+		return false, err
+	}
+	if !bytes.Equal(check, original) {
+		return false, errors.New("stale ASAR backup verification failed")
 	}
 	if isSystemElectron {
-		if err = os.RemoveAll(_appAsar + ".unpacked"); err != nil {
+		if err = os.Rename(_appAsar+".unpacked", path.Join(archive, "_app.asar.unpacked")); err != nil {
 			return false, err
 		}
 	}
+	if err = os.Remove(_appAsar); err != nil {
+		if isSystemElectron {
+			if rollback := os.Rename(path.Join(archive, "_app.asar.unpacked"), _appAsar+".unpacked"); rollback != nil {
+				return false, errors.Join(err, rollback)
+			}
+		}
+		return false, CheckIfErrIsCauseItsBusyRn(err)
+	}
+	Log.Info("Previous Discord original preserved at", archive)
 	return true, nil
 }
 
@@ -247,7 +287,8 @@ func unpatchAppAsar(dir string, isSystemElectron bool) (errOut error) {
 	defer func() {
 		if errOut != nil && len(renamesDone) > 0 {
 			Log.Error("Failed to unpatch. Undoing partial unpatch")
-			for _, rename := range renamesDone {
+			for i := len(renamesDone) - 1; i >= 0; i-- {
+				rename := renamesDone[i]
 				if innerErr := os.Rename(rename[1], rename[0]); innerErr != nil {
 					Log.Error("Failed to undo partial unpatch. This install is probably bricked.", innerErr)
 				} else {
@@ -293,6 +334,9 @@ func unpatchAppAsar(dir string, isSystemElectron bool) (errOut error) {
 }
 
 func (di *DiscordInstall) unpatch() error {
+	if di.portable {
+		return di.unpatchPortable()
+	}
 	Log.Info("Unpatching " + di.path + "...")
 
 	PreparePatch(di)
