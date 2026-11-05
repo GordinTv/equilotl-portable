@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private security reporting
+    url: https://github.com/GordinTv/equilotl-portable/security/advisories/new
+    about: Use only if Private Vulnerability Reporting is enabled; never disclose sensitive details in a public issue.

@@ -7,153 +7,22 @@
 package main
 
 import (
-	"equilotl/buildinfo"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
-	"path"
-	"runtime"
-	"time"
 )
 
+// This independent fork must never replace itself with upstream Equilotl.
+// Equicord build updates are separate and remain available through Repair.
 var IsSelfOutdated = false
 var SelfUpdateCheckDoneChan = make(chan bool, 1)
 
-func init() {
-	//goland:noinspection GoBoolExpressions
-	if buildinfo.InstallerTag == buildinfo.VersionUnknown {
-		Log.Debug("Disabling self updater as this is not a release build")
-		return
-	}
-
-	go DeleteOldExecutable()
-
-	go func() {
-		Log.Debug("Checking for Installer Updates...")
-
-		res, err := GetGithubRelease(InstallerReleaseUrl, InstallerReleaseUrlFallback)
-		if err != nil {
-			Log.Warn("Failed to check for self updates:", err)
-			SelfUpdateCheckDoneChan <- false
-		} else {
-			IsSelfOutdated = res.TagName != buildinfo.InstallerTag
-			Log.Debug("Is self outdated?", IsSelfOutdated)
-			SelfUpdateCheckDoneChan <- true
-		}
-	}()
-}
-
-func GetInstallerDownloadLink() string {
-	const BaseUrl = "https://github.com/Equicord/Equilotl/releases/latest/download/"
-	switch runtime.GOOS {
-	case "windows":
-		filename := Ternary(buildinfo.UiType == buildinfo.UiTypeCli, "EquilotlCli", "Equilotl")
-		if runtime.GOARCH == "arm64" {
-			filename += "-arm64"
-		}
-		return BaseUrl + filename + ".exe"
-	case "darwin":
-		switch runtime.GOARCH {
-		case "amd64":
-			return BaseUrl + "Equilotl-x64.dmg"
-		case "arm64":
-			return BaseUrl + "Equilotl-arm64.dmg"
-		default:
-			return ""
-		}
-	case "linux":
-		if runtime.GOARCH == "arm64" {
-			return BaseUrl + "EquilotlCli-linux-arm64"
-		}
-		return BaseUrl + "EquilotlCli-linux"
-	default:
-		return ""
-	}
-}
-
-func CanUpdateSelf() bool {
-	//goland:noinspection GoBoolExpressions
-	return IsSelfOutdated && runtime.GOOS != "darwin"
-}
-
+func init()                            { SelfUpdateCheckDoneChan <- false }
+func GetInstallerDownloadLink() string { return "" }
+func CanUpdateSelf() bool              { return false }
 func UpdateSelf() error {
-	if !CanUpdateSelf() {
-		return errors.New("Cannot update self. Either no update available or macos")
-	}
-
-	url := GetInstallerDownloadLink()
-	if url == "" {
-		return errors.New("Failed to get installer download link")
-	}
-
-	Log.Debug("Updating self from", url)
-
-	ownExePath, err := os.Executable()
-	if err != nil {
-		return err
-	}
-
-	ownExeDir := path.Dir(ownExePath)
-
-	res, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	tmp, err := os.CreateTemp(ownExeDir, "EquilotlUpdate")
-	if err != nil {
-		return fmt.Errorf("Failed to create tempfile: %w", err)
-	}
-	defer func() {
-		_ = tmp.Close()
-		_ = os.Remove(tmp.Name())
-	}()
-	if err = tmp.Chmod(0o755); err != nil {
-		return fmt.Errorf("Failed to chmod 755 %s: %w", tmp.Name(), err)
-	}
-
-	if _, err = io.Copy(tmp, res.Body); err != nil {
-		return err
-	}
-
-	if err = tmp.Close(); err != nil {
-		return err
-	}
-
-	if err = os.Remove(ownExePath); err != nil {
-		if err = os.Rename(ownExePath, ownExePath+".old"); err != nil {
-			return fmt.Errorf("Failed to remove/rename own executable: %w", err)
-		}
-	}
-
-	if err = os.Rename(tmp.Name(), ownExePath); err != nil {
-		return fmt.Errorf("Failed to replace self with updated executable. Please manually redownload the installer: %w", err)
-	}
-
-	return nil
+	return errors.New("automatic installer updates are disabled in this independent fork; download a verified release from this fork's repository")
 }
-
-func DeleteOldExecutable() {
-	ownExePath, err := os.Executable()
-	if err != nil {
-		return
-	}
-
-	for attempts := 0; attempts < 10; attempts += 1 {
-		err = os.Remove(ownExePath + ".old")
-
-		if err == nil || errors.Is(err, os.ErrNotExist) {
-			break
-		}
-
-		Log.Warn("Failed to remove old executable. Retrying in 1 second.", err)
-		time.Sleep(1 * time.Second)
-	}
-}
-
 func RelaunchSelf() error {
 	attr := new(os.ProcAttr)
 	attr.Files = []*os.File{os.Stdin, os.Stdout, os.Stderr}

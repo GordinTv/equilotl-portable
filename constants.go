@@ -16,9 +16,9 @@ const ReleaseUrlFallback = "https://equicord.org/releases/equicord"
 const InstallerReleaseUrl = "https://api.github.com/repos/Equicord/Equilotl/releases/latest"
 const InstallerReleaseUrlFallback = "https://equicord.org/releases/equilotl"
 
-var UserAgent = "Equilotl/" + buildinfo.InstallerGitHash + " (https://github.com/Equicord/Equilotl)"
+var UserAgent = "Equilotl-Portable/" + buildinfo.InstallerGitHash + " (https://github.com/GordinTv/equilotl-portable)"
 
-const SupportUrl = "https://github.com/Equicord/Equilotl/issues"
+const SupportUrl = "https://github.com/GordinTv/equilotl-portable/issues"
 
 var (
 	DiscordGreen        = color.RGBA{0, 133, 69, 0xff}

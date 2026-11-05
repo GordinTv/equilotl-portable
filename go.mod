@@ -1,6 +1,6 @@
 module equilotl
 
-go 1.26.2
+go 1.26.10
 
 require (
 	github.com/AllenDang/giu v0.6.2

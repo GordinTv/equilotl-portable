@@ -80,7 +80,7 @@ func main() {
 		os.Setenv("GDK_DPI_SCALE", "1")
 	}
 
-	win = g.NewMasterWindow("Equilotl", 1200, 800, linuxFlags)
+	win = g.NewMasterWindow("Equilotl Portable — Discord Lite Support", 1200, 800, linuxFlags)
 
 	icon, _, err := image.Decode(bytes.NewReader(iconBytes))
 	if err != nil {
@@ -469,8 +469,7 @@ func renderInstaller() g.Widget {
 			renderErrorCard(
 				DiscordYellow,
 				color.Black,
-				"**Github** and **equicord.org** are the only official places to get Equicord. Any other site claiming to be us is malicious.\n"+
-					"If you downloaded from any other source, you should delete / uninstall everything immediately, run a malware scan and change your Discord password.",
+				"Community fork: Equilotl Portable — Discord Lite Support. Not officially affiliated with Discord, Equicord or Team AntiLag. Installer self-update is disabled; Equicord updates remain available.",
 				90,
 			),
 		),
@@ -709,7 +708,7 @@ func loop() {
 		Layout(
 			g.Align(g.AlignCenter).To(
 				g.Style().SetFontSize(40).To(
-					g.Label("Equilotl"),
+					g.Label("Equilotl Portable (unofficial)"),
 				),
 			),
 			g.Dummy(0, 40),

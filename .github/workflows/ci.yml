@@ -1,0 +1,82 @@
+name: CI
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source-policy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Audit all reachable source/history
+        run: python3 scripts/audit_publication.py --history
+      - name: Secret detection
+        run: |
+          go install github.com/zricethezav/gitleaks/v8@v8.30.1
+          gitleaks git . --log-opts='--all --full-history' --redact
+      - name: Validate workflows
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          actionlint -shellcheck=
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Verify compiler
+        run: . ./scripts/Setup-Toolchain.ps1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.22.0'
+      - name: Regression suite (fixtures only)
+        run: ./scripts/Test-Windows.ps1
+      - name: Reachable vulnerability analysis
+        run: |
+          go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 -tags cli ./...
+          if ($LASTEXITCODE) { throw 'CLI vulnerability analysis failed' }
+          go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
+          if ($LASTEXITCODE) { throw 'GUI vulnerability analysis failed' }
+      - name: Verify dependency notices
+        run: |
+          python scripts/collect_licenses.py
+          git diff --exit-code -- third_party go.mod go.sum
+          if ($LASTEXITCODE) { throw 'Dependency notices or lockfiles drifted' }
+      - name: Build and package controlled artifacts
+        run: |
+          ./scripts/Build-Windows.ps1
+          python scripts/package_release.py
+          if ($LASTEXITCODE) { throw 'Packaging failed' }
+          python scripts/verify_distribution.py dist
+          if ($LASTEXITCODE) { throw 'Artifact verification failed' }
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows-amd64-review
+          path: |
+            dist/*.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14

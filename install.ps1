@@ -1,14 +1,2 @@
-$link = "https://github.com/Equicord/Equilotl/releases/latest/download/EquilotlCli.exe"
-
-$outfile = "$env:TEMP\EquilotlCli.exe"
-
-Write-Output "Downloading installer to $outfile"
-
-Invoke-WebRequest -Uri "$link" -OutFile "$outfile"
-
-Write-Output ""
-
-Start-Process -Wait -NoNewWindow -FilePath "$outfile"
-
-# Cleanup
-Remove-Item -Force "$outfile"
+# Community fork: no remote download-and-run bootstrap is configured.
+throw 'Download this fork release manually, verify SHA256SUMS.txt, and follow docs/INSTALLATION.md. This script does not download or execute the upstream installer.'

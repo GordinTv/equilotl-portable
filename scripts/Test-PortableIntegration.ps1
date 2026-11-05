@@ -1,7 +1,7 @@
 param(
     [string]$SourceRoot = (Join-Path $env:APPDATA 'DC-Antilag'),
     [string]$Version = '1.0.1160',
-    [string]$Installer = (Join-Path $PSScriptRoot '..\build\EquilotlCli-processfix.exe'),
+    [string]$Installer = (Join-Path $PSScriptRoot '..\build\release-candidate\Equilotl-Portable-CLI-windows-amd64.exe'),
     [string]$EquicordAsar = (Join-Path $env:APPDATA 'Equicord\equicord.asar'),
     [switch]$Launch,
     [int]$Port = 19426

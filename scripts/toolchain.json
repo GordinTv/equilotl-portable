@@ -1,0 +1,13 @@
+{
+  "go": "1.26.10",
+  "gcc": "16.2.0",
+  "node": "24.22.0",
+  "w64devkit": {
+    "version": "2.11.0",
+    "url": "https://github.com/skeeto/w64devkit/releases/download/v2.11.0/w64devkit-x64-2.11.0.7z.exe",
+    "sha256": "54c2bb9962e8a30c8270e34c5efc3d5fee579f53087fa7d435b95fbba2af7b2b"
+  },
+  "govulncheck": "v1.1.4",
+  "gitleaks": "v8.30.1",
+  "actionlint": "v1.7.12"
+}

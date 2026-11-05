@@ -1,0 +1,29 @@
+name: Bug report
+description: Report a reproducible installer problem with sanitized information
+body:
+  - type: markdown
+    attributes:
+      value: "For vulnerabilities use Security → Report a vulnerability. Never attach tokens, account directories, complete Discord copies or raw session logs."
+  - type: input
+    id: version
+    attributes:
+      label: Fork version and Windows architecture
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Host channel, version and portable/official layout
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps, expected result and actual result
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostic
+    attributes:
+      label: Sanitized error or process diagnosis
+      description: Replace personal home names with <user>. Do not include credentials or account data.
