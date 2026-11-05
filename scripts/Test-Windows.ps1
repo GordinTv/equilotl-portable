@@ -13,7 +13,11 @@ try {
     foreach($variant in @('cli','gui','race')) {
         $goArgs=@('test','-count=1','-v');if($variant -eq 'cli'){$goArgs+=@('-tags','cli')};if($variant -eq 'race'){$goArgs+=@('-race','-tags','cli')};$goArgs+=@('./...')
         & go @goArgs *> (Join-Path $LogDirectory "tests-$variant.txt")
-        if($LASTEXITCODE){throw "Tests failed: $variant (inspect local logs)"}
+        if($LASTEXITCODE){
+            # CI runs only synthetic fixtures; surface failures instead of losing runner-only logs.
+            if($env:GITHUB_ACTIONS -eq 'true') { Get-Content (Join-Path $LogDirectory "tests-$variant.txt") | Write-Output }
+            throw "Tests failed: $variant (inspect local logs)"
+        }
     }
     & go vet -tags cli ./...;if($LASTEXITCODE){throw 'CLI vet failed'}
     & go vet ./...;if($LASTEXITCODE){throw 'GUI vet failed'}
