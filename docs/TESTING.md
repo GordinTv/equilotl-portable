@@ -1,6 +1,6 @@
 # Testing and evidence
 
-The portable/process revision recorded **88 passing checks including subtests** in both GUI and CLI variants. Publication work preserves them and adds an upstream-self-update safety regression. These are table-inclusive counts, not 88 independent test functions. See the [sanitized validation record](validation/2026-11-05.md).
+The portable/process revision recorded **88 passing checks including subtests** in both GUI and CLI variants. Publication work preserves them and adds upstream-self-update, DOS 8.3 alias and junction-ancestor regressions (91 checks per variant in the current local pass). These are table-inclusive counts, not 88 independent test functions. See the [sanitized validation record](validation/2026-11-05.md).
 
 Run `scripts/Test-Windows.ps1` for formatting, module integrity, CLI/GUI tests, race detection and vet. Tests use temporary layouts, injected errors, local HTTP servers and harmless copies of the runner's own executable files. The Node loader test mocks Electron. CI must not start Discord or copy account data.
 

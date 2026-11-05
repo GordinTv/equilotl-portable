@@ -3,6 +3,7 @@
 | Area | Responsibility |
 | --- | --- |
 | `find_discord_*.go` | Platform discovery, host/version metadata |
+| `portable_path_windows.go` | Reject reparse points on every ancestor without confusing ordinary DOS 8.3 aliases with links |
 | `portable.go` | Unpacked-host validation, verified transaction state, rollback/recovery |
 | `portable_loader.cjs` | Embedded narrow Electron/Equicord path adapter |
 | `portable_process_windows.go` | Process attribution/diagnosis and executable-access guards |

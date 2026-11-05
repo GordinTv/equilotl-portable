@@ -38,12 +38,8 @@ func plainPath(p string, directory bool) error {
 	if err != nil {
 		return err
 	}
-	real, err := filepath.EvalSymlinks(abs)
-	if err != nil {
+	if err := rejectPathLinks(abs); err != nil {
 		return err
-	}
-	if !strings.EqualFold(filepath.Clean(real), filepath.Clean(abs)) {
-		return fmt.Errorf("linked path refused: %s", p)
 	}
 	s, err := os.Lstat(p)
 	if err != nil {

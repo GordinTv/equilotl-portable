@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — planned 0.1.0-rc.1
+## Unreleased â€” planned 0.1.0-rc.1
 
 First independent community release candidate, based on upstream Equilotl 2.3.0. A planned version is not evidence that a release has already been published.
 
@@ -15,6 +15,7 @@ First independent community release candidate, based on upstream Equilotl 2.3.0.
 
 ### Fixed
 
+- Ordinary DOS 8.3 paths (including hosted-runner TEMP) are accepted; junctions and other reparse points remain refused.
 - Portable Invalid Location rejection and broad/name-based process attribution.
 - Destructive/truncated Equicord downloads: downloads now stage/validate before replacement, retaining the previous build.
 - Rollback rename order; stale official originals are retained in recovery archives.

@@ -4,7 +4,10 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 func portableAtomicReplace(from, to string) error { return os.Rename(from, to) }
@@ -22,4 +25,15 @@ func leasePortableExecutable(_ *DiscordInstall) (func(), error) {
 }
 func lockPortable(_ string) (func(), error) {
 	return nil, errors.New("portable Discord is supported on Windows only")
+}
+
+func rejectPathLinks(abs string) error {
+	real, err := filepath.EvalSymlinks(abs)
+	if err != nil {
+		return err
+	}
+	if !strings.EqualFold(filepath.Clean(real), filepath.Clean(abs)) {
+		return fmt.Errorf("linked path refused: %s", abs)
+	}
+	return nil
 }
