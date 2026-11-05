@@ -43,7 +43,7 @@ Distribution target: **Windows x64**. Recorded runtime checks cover Lite PTB **1
 
 Recorded integration reached login, loaded Equicord/two plugins, persisted an isolated setting and restored 1,292 files without differences. Post-login settings/plugins were subsequently **reported working by the maintainer**, separately from recorded automated evidence. Themes, voice, screen sharing and full manual acceptance remain pending explicit records. [Validation matrix](docs/TESTING.md).
 
-Host/Equicord updates can require revalidation. Read-only files or insufficient permissions may prevent the executable safety probe without proving Lite is running. Do not disable security protections to bypass errors. Installer auto-update to upstream is disabled; Equicord Repair remains enabled. No private screenshots or raw account logs are published.
+A later isolated pre-login probe loaded Equicord/NoTrack but failed the FixDiscordCss-start assertion; current plugin runtime acceptance remains incomplete. Host/Equicord updates can require revalidation. Read-only files or insufficient permissions may prevent the executable safety probe without proving Lite is running. Do not disable security protections to bypass errors. Installer auto-update to upstream is disabled; Equicord Repair remains enabled. No private screenshots or raw account logs are published.
 
 ## Build, contribute and report
 

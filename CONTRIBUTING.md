@@ -9,3 +9,5 @@ Use the controlled toolchain in docs/BUILDING.md. Run formatting, both UI varian
 Submit a focused PR explaining trigger, resulting behavior, preserved invariants, tests/evidence and limitations. Use small commits with clear subjects. Do not edit upstream history or force-push main. Link upstream issues when relevant without presenting this project as official.
 
 Changes are contributed under the existing project GPL terms; no copyright assignment or invented CLA is required. Do not introduce dependencies without notice/license and security review. Update the locked graph and collected notices together. Release tags are a maintainer action after review, not part of ordinary PRs.
+
+Use your GitHub noreply commit address if your personal email must remain private. Review author/committer metadata as well as file contents before pushing; some API tools choose the account email automatically.

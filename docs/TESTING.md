@@ -16,6 +16,8 @@ Requires an existing unpatched Lite host and local Equicord build. A new ignored
 
 The script tests install/repeat/repair, startup before login, two plugins/native settings, refusal while running, uninstall and tree comparison. A recorded run restored 1,292 files without differences.
 
+The latest additional pre-login startup probe loaded the Equicord bridge and NoTrack but failed the FixDiscordCss-start assertion. Its settings write was therefore not reached. The isolated application was subsequently uninstalled and all 1,292 files restored without differences. Earlier successful plugin records remain historical evidence, not a claim that this latest runtime probe passed.
+
 ## Manual Windows checklist
 
 Record version/date/result and sanitized reproduction. User reports remain labeled reported, separately from recorded checks.

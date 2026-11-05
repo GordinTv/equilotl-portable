@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased â€” planned 0.1.0-rc.1
+## Unreleased — planned 0.1.0-rc.1
 
 First independent community release candidate, based on upstream Equilotl 2.3.0. A planned version is not evidence that a release has already been published.
 

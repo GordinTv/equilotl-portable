@@ -39,6 +39,8 @@ Distribuição para **Windows x64**. Há ensaios registrados com Lite PTB **1.0.
 
 Os registros confirmam carregamento antes do login, dois plugins, gravação de configuração e restauração de 1.292 arquivos. O funcionamento após login foi posteriormente **relatado pelo mantenedor**, sem publicação de dados privados. Temas, voz, compartilhamento de tela e a checklist completa permanecem pendentes de registro. Veja [testes](docs/TESTING.md).
 
+Um ensaio posterior antes do login carregou Equicord/NoTrack, mas falhou ao confirmar o início do FixDiscordCss; a validação atual dos plugins continua incompleta.
+
 Permissões ou arquivos somente leitura podem impedir o probe de segurança sem significar que o Lite está aberto. Não desative proteções para contornar erros. O auto-update do instalador para o upstream foi desativado; a atualização do Equicord por Repair continua disponível.
 
 ## Compilar e contribuir

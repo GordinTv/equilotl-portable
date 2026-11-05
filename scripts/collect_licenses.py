@@ -33,5 +33,5 @@ for module in sorted(modules, key=lambda m: m["Path"]):
 # The Go runtime's BSD notice is needed for binary redistribution too.
 goroot = pathlib.Path(subprocess.check_output(["go", "env", "GOROOT"], text=True).strip())
 shutil.copyfile(goroot / "LICENSE", output / "Go-LICENSE.txt")
-(output / "modules.json").write_text(json.dumps(inventory, indent=2) + "\n", encoding="utf-8")
+(output / "modules.json").write_text(json.dumps(inventory, indent=2) + "\n", encoding="utf-8", newline="\n")
 print("Collected notices for", len(inventory), "locked modules and the Go runtime")

@@ -18,6 +18,8 @@ try {
             if($env:GITHUB_ACTIONS -eq 'true') { Get-Content (Join-Path $LogDirectory "tests-$variant.txt") | Write-Output }
             throw "Tests failed: $variant (inspect local logs)"
         }
+        $checks = @(Select-String -Path (Join-Path $LogDirectory "tests-$variant.txt") -Pattern '^\s*--- PASS:').Count
+        Write-Output "${variant}: $checks passing checks (including subtests)"
     }
     & go vet -tags cli ./...;if($LASTEXITCODE){throw 'CLI vet failed'}
     & go vet ./...;if($LASTEXITCODE){throw 'GUI vet failed'}
