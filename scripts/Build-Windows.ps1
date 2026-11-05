@@ -14,7 +14,10 @@ try {
     if (-not $Commit) { $Commit=(& git.exe rev-parse HEAD).Trim();if($LASTEXITCODE){throw 'Git commit required'} }
     if ($Commit -notmatch '^[0-9a-f]{40}$') { throw 'Commit must be a full Git SHA' }
     $dirty=@(& git.exe status --porcelain --untracked-files=normal)
-    if($dirty){throw 'Commit reviewed source before building a release candidate'}
+    if($dirty){
+        if($env:GITHUB_ACTIONS -eq 'true') { $dirty | Write-Output }
+        throw 'Commit reviewed source before building a release candidate'
+    }
     if (-not $OutputDirectory) { $OutputDirectory=Join-Path $project 'build\release-candidate' }
     $out=[IO.Path]::GetFullPath($OutputDirectory);New-Item -ItemType Directory -Force $out|Out-Null
     $env:GOOS='windows';$env:GOARCH='amd64';$env:CGO_ENABLED='1'
